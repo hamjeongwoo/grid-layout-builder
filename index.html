@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CSS Grid Layout Builder</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <h1>CSS Grid Layout Builder</h1>
+        <p>드래그로 영역을 만들고 CSS Grid 문법을 바로 확인하세요.</p>
+      </div>
+      <div class="topbar-actions">
+        <button id="preset-dashboard" class="button secondary" type="button">Dashboard</button>
+        <button id="reset-grid" class="button danger" type="button">Reset</button>
+      </div>
+    </header>
+
+    <section class="workspace" aria-label="CSS Grid builder workspace">
+      <aside class="panel controls-panel">
+        <h2>Grid</h2>
+        <label>Columns <input id="columns-input" type="number" min="1" max="8" value="4"></label>
+        <label>Rows <input id="rows-input" type="number" min="1" max="8" value="3"></label>
+        <label>Gap <input id="gap-input" type="number" min="0" max="64" value="16"></label>
+
+        <h2>Active Area</h2>
+        <label>Name <input id="area-name-input" type="text" value="content" spellcheck="false"></label>
+        <label>Color <input id="area-color-input" type="color" value="#2a9d8f"></label>
+        <p id="area-name-help" class="hint">영문, 숫자, 하이픈, 언더스코어를 사용할 수 있습니다.</p>
+
+        <h2>Areas</h2>
+        <div id="area-list" class="area-list"></div>
+      </aside>
+
+      <section class="panel canvas-panel">
+        <div class="panel-heading">
+          <h2>Canvas</h2>
+          <p>셀을 드래그해서 사각형 영역을 만드세요.</p>
+        </div>
+        <div id="grid-canvas" class="grid-canvas" aria-label="Interactive grid canvas"></div>
+        <p id="canvas-message" class="status-message" role="status"></p>
+      </section>
+
+      <aside class="panel code-panel">
+        <h2>grid-template-areas</h2>
+        <textarea id="areas-textarea" spellcheck="false" rows="6"></textarea>
+        <div class="button-row">
+          <button id="apply-areas" class="button" type="button">Apply Areas</button>
+          <button id="copy-areas" class="button secondary" type="button">Copy Areas</button>
+        </div>
+        <p id="areas-error" class="error-message" role="alert"></p>
+
+        <h2>Generated CSS</h2>
+        <pre><code id="css-output"></code></pre>
+        <button id="copy-css" class="button secondary" type="button">Copy CSS</button>
+
+        <h2>HTML</h2>
+        <pre><code id="html-output"></code></pre>
+        <button id="copy-html" class="button secondary" type="button">Copy HTML</button>
+      </aside>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
