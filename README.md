@@ -2,6 +2,8 @@
 
 A dependency-free CSS Grid layout builder. Open `index.html` in a browser, drag across cells to create named grid areas, and copy the generated CSS or HTML.
 
+This project was created end-to-end by AI, from initial design through implementation.
+
 ## Features
 
 - Drag-select rectangular CSS Grid areas
