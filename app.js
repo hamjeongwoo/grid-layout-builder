@@ -111,3 +111,350 @@ function parseTemplateAreas(text) {
   if (!validation.ok) return { ok: false, message: validation.message, cells: null };
   return { ok: true, message: "", cells: rows };
 }
+
+function makeRectangle(start, current) {
+  if (!start || !current) return null;
+  return {
+    minRow: Math.min(start.row, current.row),
+    maxRow: Math.max(start.row, current.row),
+    minColumn: Math.min(start.column, current.column),
+    maxColumn: Math.max(start.column, current.column)
+  };
+}
+
+function getDragRectangle() {
+  return makeRectangle(state.dragStart, state.dragCurrent);
+}
+
+function isCellInRectangle(row, column, rect) {
+  return row >= rect.minRow && row <= rect.maxRow && column >= rect.minColumn && column <= rect.maxColumn;
+}
+
+function fillRectangle(rect, areaName) {
+  const next = state.cells.map((row) => row.map((value) => (value === areaName ? "." : value)));
+  for (let row = rect.minRow; row <= rect.maxRow; row += 1) {
+    for (let column = rect.minColumn; column <= rect.maxColumn; column += 1) {
+      next[row][column] = areaName;
+    }
+  }
+  state.cells = clearInvalidAreaFragments(next, areaName);
+}
+
+function clearInvalidAreaFragments(cells, protectedArea) {
+  let next = cloneCells(cells);
+  getAreaNames(next).forEach((name) => {
+    if (name === protectedArea || isRectangularArea(next, name)) return;
+    next = next.map((row) => row.map((value) => (value === name ? "." : value)));
+  });
+  return next;
+}
+
+if (typeof document !== "undefined") {
+  const dom = {
+    columns: document.querySelector("#columns-input"),
+    rows: document.querySelector("#rows-input"),
+    gap: document.querySelector("#gap-input"),
+    areaName: document.querySelector("#area-name-input"),
+    areaColor: document.querySelector("#area-color-input"),
+    areaList: document.querySelector("#area-list"),
+    canvas: document.querySelector("#grid-canvas"),
+    canvasMessage: document.querySelector("#canvas-message"),
+    areasTextarea: document.querySelector("#areas-textarea"),
+    areasError: document.querySelector("#areas-error"),
+    cssOutput: document.querySelector("#css-output"),
+    htmlOutput: document.querySelector("#html-output")
+  };
+
+  function ensureAreaMeta(areaName, color) {
+    if (!state.areas[areaName]) {
+      state.areas[areaName] = { color: color || palette[getAreaNames(state.cells).length % palette.length] };
+    }
+  }
+
+  function syncAreaMetadata() {
+    const names = getAreaNames(state.cells);
+    names.forEach((name) => ensureAreaMeta(name));
+    Object.keys(state.areas).forEach((name) => {
+      if (!names.includes(name)) delete state.areas[name];
+    });
+  }
+
+  function renderControls() {
+    dom.columns.value = state.columns;
+    dom.rows.value = state.rows;
+    dom.gap.value = state.gap;
+    dom.areaName.value = state.activeArea;
+    dom.areaColor.value = state.activeColor;
+  }
+
+  function renameArea(oldName, newName) {
+    const clean = normalizeAreaName(newName);
+    if (clean === oldName) return;
+    const previousCells = cloneCells(state.cells);
+    const previousAreas = { ...state.areas };
+    state.cells = state.cells.map((row) => row.map((value) => (value === oldName ? clean : value)));
+    state.areas[clean] = state.areas[oldName] || { color: state.activeColor };
+    delete state.areas[oldName];
+    if (state.activeArea === oldName) state.activeArea = clean;
+    const validation = validateCells(state.cells);
+    if (!validation.ok) {
+      state.cells = previousCells;
+      state.areas = previousAreas;
+      if (state.activeArea === clean) state.activeArea = oldName;
+      dom.canvasMessage.textContent = validation.message;
+    }
+  }
+
+  function deleteArea(areaName) {
+    state.cells = state.cells.map((row) => row.map((value) => (value === areaName ? "." : value)));
+    delete state.areas[areaName];
+    if (state.activeArea === areaName) {
+      state.activeArea = "content";
+      state.activeColor = "#2a9d8f";
+    }
+  }
+
+  function renderAreaList() {
+    const names = getAreaNames(state.cells);
+    dom.areaList.innerHTML = names.length ? "" : '<p class="hint">No areas yet.</p>';
+    names.forEach((name) => {
+      const item = document.createElement("div");
+      item.className = "area-item editable";
+      item.innerHTML = `
+        <span class="swatch"></span>
+        <input class="area-rename" value="${name}" aria-label="Rename ${name}">
+        <button class="mini-button use-area" type="button">Use</button>
+        <button class="mini-button delete-area" type="button">Delete</button>
+      `;
+      item.querySelector(".swatch").style.background = state.areas[name]?.color || "#98a2b3";
+      item.querySelector(".use-area").addEventListener("click", () => {
+        state.activeArea = name;
+        state.activeColor = state.areas[name]?.color || state.activeColor;
+        render();
+      });
+      item.querySelector(".delete-area").addEventListener("click", () => {
+        deleteArea(name);
+        render();
+      });
+      item.querySelector(".area-rename").addEventListener("change", (event) => {
+        renameArea(name, event.target.value);
+        render();
+      });
+      dom.areaList.appendChild(item);
+    });
+  }
+
+  function renderCanvas() {
+    dom.canvas.style.gridTemplateColumns = `repeat(${state.columns}, minmax(0, 1fr))`;
+    dom.canvas.style.gridTemplateRows = `repeat(${state.rows}, minmax(56px, 1fr))`;
+    dom.canvas.style.gap = `${Math.max(4, Math.min(state.gap, 24))}px`;
+    dom.canvas.innerHTML = "";
+    const preview = getDragRectangle();
+    state.cells.forEach((row, rowIndex) => {
+      row.forEach((areaName, columnIndex) => {
+        const cell = document.createElement("button");
+        cell.type = "button";
+        cell.className = `grid-cell ${areaName === "." ? "empty" : ""}`;
+        cell.dataset.row = String(rowIndex);
+        cell.dataset.column = String(columnIndex);
+        cell.textContent = areaName === "." ? "empty" : areaName;
+        if (areaName !== ".") cell.style.background = state.areas[areaName]?.color || "#98a2b3";
+        if (preview && isCellInRectangle(rowIndex, columnIndex, preview)) cell.classList.add("preview");
+        dom.canvas.appendChild(cell);
+      });
+    });
+  }
+
+  function renderOutputs() {
+    dom.areasTextarea.value = cellsToTemplateAreas(state.cells);
+    dom.cssOutput.textContent = generateCss(state);
+    dom.htmlOutput.textContent = generateHtml(state);
+  }
+
+  function render() {
+    syncAreaMetadata();
+    renderControls();
+    renderAreaList();
+    renderCanvas();
+    renderOutputs();
+  }
+
+  function resizeCells(rows, columns) {
+    const next = createEmptyCells(rows, columns);
+    for (let row = 0; row < Math.min(rows, state.rows); row += 1) {
+      for (let column = 0; column < Math.min(columns, state.columns); column += 1) {
+        next[row][column] = state.cells[row][column];
+      }
+    }
+    state.rows = rows;
+    state.columns = columns;
+    state.cells = clearInvalidAreaFragments(next, state.activeArea);
+  }
+
+  function bindControls() {
+    dom.columns.addEventListener("input", () => {
+      resizeCells(state.rows, Math.max(1, Math.min(8, Number(dom.columns.value) || 1)));
+      render();
+    });
+    dom.rows.addEventListener("input", () => {
+      resizeCells(Math.max(1, Math.min(8, Number(dom.rows.value) || 1)), state.columns);
+      render();
+    });
+    dom.gap.addEventListener("input", () => {
+      state.gap = Math.max(0, Math.min(64, Number(dom.gap.value) || 0));
+      render();
+    });
+    dom.areaName.addEventListener("input", () => {
+      state.activeArea = normalizeAreaName(dom.areaName.value);
+    });
+    dom.areaColor.addEventListener("input", () => {
+      state.activeColor = dom.areaColor.value;
+      ensureAreaMeta(state.activeArea, state.activeColor);
+      state.areas[state.activeArea].color = state.activeColor;
+      render();
+    });
+    document.querySelector("#reset-grid").addEventListener("click", () => {
+      state.rows = 3;
+      state.columns = 4;
+      state.gap = 16;
+      state.cells = cloneCells(initialCells);
+      state.areas = {
+        header: { color: "#3167d4" },
+        sidebar: { color: "#f4a261" },
+        content: { color: "#2a9d8f" },
+        footer: { color: "#495057" }
+      };
+      state.activeArea = "content";
+      state.activeColor = "#2a9d8f";
+      dom.areasError.textContent = "";
+      dom.canvasMessage.textContent = "Grid reset.";
+      render();
+    });
+    document.querySelector("#preset-dashboard").addEventListener("click", () => {
+      state.rows = 4;
+      state.columns = 4;
+      state.gap = 16;
+      state.cells = [
+        ["nav", "nav", "nav", "nav"],
+        ["sidebar", "main", "main", "main"],
+        ["sidebar", "main", "main", "main"],
+        ["footer", "footer", "footer", "footer"]
+      ];
+      state.areas = {
+        nav: { color: "#3167d4" },
+        sidebar: { color: "#f4a261" },
+        main: { color: "#2a9d8f" },
+        footer: { color: "#495057" }
+      };
+      state.activeArea = "main";
+      state.activeColor = "#2a9d8f";
+      dom.areasError.textContent = "";
+      dom.canvasMessage.textContent = "Dashboard preset applied.";
+      render();
+    });
+  }
+
+  function getCellPoint(target) {
+    const cell = target?.closest?.(".grid-cell");
+    if (!cell) return null;
+    return {
+      row: Number(cell.dataset.row),
+      column: Number(cell.dataset.column)
+    };
+  }
+
+  function getCellPointFromEvent(event) {
+    return getCellPoint(document.elementFromPoint(event.clientX, event.clientY));
+  }
+
+  function bindCanvasDrag() {
+    dom.canvas.addEventListener("pointerdown", (event) => {
+      const point = getCellPoint(event.target);
+      if (!point) return;
+      state.dragStart = point;
+      state.dragCurrent = point;
+      dom.canvas.setPointerCapture(event.pointerId);
+      renderCanvas();
+    });
+
+    dom.canvas.addEventListener("pointermove", (event) => {
+      if (!state.dragStart) return;
+      const point = getCellPointFromEvent(event);
+      if (!point) return;
+      state.dragCurrent = point;
+      renderCanvas();
+    });
+
+    dom.canvas.addEventListener("pointerup", (event) => {
+      if (!state.dragStart) return;
+      const rect = getDragRectangle();
+      const areaName = normalizeAreaName(state.activeArea);
+      state.activeArea = areaName;
+      ensureAreaMeta(areaName, state.activeColor);
+      state.areas[areaName].color = state.activeColor;
+      fillRectangle(rect, areaName);
+      state.dragStart = null;
+      state.dragCurrent = null;
+      if (dom.canvas.hasPointerCapture(event.pointerId)) dom.canvas.releasePointerCapture(event.pointerId);
+      dom.areasError.textContent = "";
+      dom.canvasMessage.textContent = `${areaName} area updated.`;
+      render();
+    });
+
+    dom.canvas.addEventListener("pointercancel", () => {
+      state.dragStart = null;
+      state.dragCurrent = null;
+      renderCanvas();
+    });
+  }
+
+  async function copyText(text, statusElement, message) {
+    try {
+      await navigator.clipboard.writeText(text);
+      statusElement.textContent = message;
+    } catch (error) {
+      const helper = document.createElement("textarea");
+      helper.value = text;
+      helper.style.position = "fixed";
+      helper.style.opacity = "0";
+      document.body.appendChild(helper);
+      helper.select();
+      document.execCommand("copy");
+      helper.remove();
+      statusElement.textContent = message;
+    }
+  }
+
+  function applyTemplateAreas() {
+    const parsed = parseTemplateAreas(dom.areasTextarea.value);
+    if (!parsed.ok) {
+      dom.areasError.textContent = parsed.message;
+      return;
+    }
+    state.cells = parsed.cells;
+    state.rows = parsed.cells.length;
+    state.columns = parsed.cells[0].length;
+    getAreaNames(state.cells).forEach((name) => ensureAreaMeta(name));
+    dom.areasError.textContent = "";
+    dom.canvasMessage.textContent = "Template areas applied.";
+    render();
+  }
+
+  function bindCodePanel() {
+    document.querySelector("#apply-areas").addEventListener("click", applyTemplateAreas);
+    document.querySelector("#copy-areas").addEventListener("click", () => {
+      copyText(dom.areasTextarea.value, dom.canvasMessage, "grid-template-areas copied.");
+    });
+    document.querySelector("#copy-css").addEventListener("click", () => {
+      copyText(dom.cssOutput.textContent, dom.canvasMessage, "CSS copied.");
+    });
+    document.querySelector("#copy-html").addEventListener("click", () => {
+      copyText(dom.htmlOutput.textContent, dom.canvasMessage, "HTML copied.");
+    });
+  }
+
+  bindCanvasDrag();
+  bindControls();
+  bindCodePanel();
+  render();
+}

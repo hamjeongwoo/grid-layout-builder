@@ -11,7 +11,7 @@
     <header class="topbar">
       <div>
         <h1>CSS Grid Layout Builder</h1>
-        <p>드래그로 영역을 만들고 CSS Grid 문법을 바로 확인하세요.</p>
+        <p>&#46300;&#47000;&#44536;&#47196; &#50689;&#50669;&#51012; &#47564;&#46308;&#44256; CSS Grid &#47928;&#48277;&#51012; &#48148;&#47196; &#54869;&#51064;&#54616;&#49464;&#50836;.</p>
       </div>
       <div class="topbar-actions">
         <button id="preset-dashboard" class="button secondary" type="button">Dashboard</button>
@@ -27,9 +27,9 @@
         <label>Gap <input id="gap-input" type="number" min="0" max="64" value="16"></label>
 
         <h2>Active Area</h2>
-        <label>Name <input id="area-name-input" type="text" value="content" spellcheck="false"></label>
+        <label>Name <input id="area-name-input" type="text" value="content" spellcheck="false" aria-describedby="area-name-help"></label>
         <label>Color <input id="area-color-input" type="color" value="#2a9d8f"></label>
-        <p id="area-name-help" class="hint">영문, 숫자, 하이픈, 언더스코어를 사용할 수 있습니다.</p>
+        <p id="area-name-help" class="hint">&#50689;&#47928;, &#49707;&#51088;, &#54616;&#51060;&#54536;, &#50616;&#45908;&#49828;&#53076;&#50612;&#47484; &#49324;&#50857;&#54624; &#49688; &#51080;&#49845;&#45768;&#45796;.</p>
 
         <h2>Areas</h2>
         <div id="area-list" class="area-list"></div>
@@ -38,14 +38,14 @@
       <section class="panel canvas-panel">
         <div class="panel-heading">
           <h2>Canvas</h2>
-          <p>셀을 드래그해서 사각형 영역을 만드세요.</p>
+          <p>&#49472;&#51012; &#46300;&#47000;&#44536;&#54644;&#49436; &#49324;&#44033;&#54805; &#50689;&#50669;&#51012; &#47564;&#46300;&#49464;&#50836;.</p>
         </div>
         <div id="grid-canvas" class="grid-canvas" aria-label="Interactive grid canvas"></div>
         <p id="canvas-message" class="status-message" role="status"></p>
       </section>
 
       <aside class="panel code-panel">
-        <h2>grid-template-areas</h2>
+        <label class="section-label" for="areas-textarea">grid-template-areas</label>
         <textarea id="areas-textarea" spellcheck="false" rows="6"></textarea>
         <div class="button-row">
           <button id="apply-areas" class="button" type="button">Apply Areas</button>
