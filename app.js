@@ -10,6 +10,9 @@ const state = {
   rows: 3,
   columns: 4,
   gap: 16,
+  columnTemplate: "repeat(4, 1fr)",
+  rowTemplate: "repeat(3, minmax(80px, 1fr))",
+  includeAreas: true,
   cells: cloneCells(initialCells),
   areas: {
     header: { color: "#3167d4" },
@@ -90,15 +93,24 @@ function cellsToTemplateAreas(cells) {
   return cells.map((row) => `"${row.join(" ")}"`).join("\n");
 }
 
+function normalizeTrackTemplate(value, count, fallbackUnit) {
+  const template = String(value || "").trim();
+  return template || `repeat(${count}, ${fallbackUnit})`;
+}
+
 function generateCss(currentState) {
   const areaClasses = getAreaNames(currentState.cells)
     .map((name) => `.${name} {\n  grid-area: ${name};\n}`)
     .join("\n\n");
-  return `.layout {\n  display: grid;\n  grid-template-columns: repeat(${currentState.columns}, 1fr);\n  grid-template-rows: repeat(${currentState.rows}, 1fr);\n  grid-template-areas:\n${cellsToTemplateAreas(currentState.cells).split("\n").map((line) => `    ${line}`).join("\n")};\n  gap: ${currentState.gap}px;\n}\n\n${areaClasses}`;
+  const areasBlock = currentState.includeAreas
+    ? `  grid-template-areas:\n${cellsToTemplateAreas(currentState.cells).split("\n").map((line) => `    ${line}`).join("\n")};\n`
+    : "";
+  return `.layout {\n  display: grid;\n  grid-template-columns: ${normalizeTrackTemplate(currentState.columnTemplate, currentState.columns, "1fr")};\n  grid-template-rows: ${normalizeTrackTemplate(currentState.rowTemplate, currentState.rows, "minmax(80px, 1fr)")};\n${areasBlock}  gap: ${currentState.gap}px;\n}${currentState.includeAreas && areaClasses ? `\n\n${areaClasses}` : ""}`;
 }
 
 function generateHtml(currentState) {
-  return `<div class="layout">\n${getAreaNames(currentState.cells).map((name) => `  <section class="${name}">${name}</section>`).join("\n")}\n</div>`;
+  const names = currentState.includeAreas ? getAreaNames(currentState.cells) : ["item-1", "item-2", "item-3"];
+  return `<div class="layout">\n${names.map((name) => `  <section class="${name}">${name}</section>`).join("\n")}\n</div>`;
 }
 
 function parseTemplateAreas(text) {
@@ -154,6 +166,9 @@ if (typeof document !== "undefined") {
     columns: document.querySelector("#columns-input"),
     rows: document.querySelector("#rows-input"),
     gap: document.querySelector("#gap-input"),
+    columnTemplate: document.querySelector("#column-template-input"),
+    rowTemplate: document.querySelector("#row-template-input"),
+    includeAreas: document.querySelector("#include-areas-input"),
     areaName: document.querySelector("#area-name-input"),
     areaColor: document.querySelector("#area-color-input"),
     areaList: document.querySelector("#area-list"),
@@ -183,6 +198,9 @@ if (typeof document !== "undefined") {
     dom.columns.value = state.columns;
     dom.rows.value = state.rows;
     dom.gap.value = state.gap;
+    dom.columnTemplate.value = state.columnTemplate;
+    dom.rowTemplate.value = state.rowTemplate;
+    dom.includeAreas.checked = state.includeAreas;
     dom.areaName.value = state.activeArea;
     dom.areaColor.value = state.activeColor;
   }
@@ -245,8 +263,8 @@ if (typeof document !== "undefined") {
   }
 
   function renderCanvas() {
-    dom.canvas.style.gridTemplateColumns = `repeat(${state.columns}, minmax(0, 1fr))`;
-    dom.canvas.style.gridTemplateRows = `repeat(${state.rows}, minmax(56px, 1fr))`;
+    dom.canvas.style.gridTemplateRows = state.rowTemplate;
+    dom.canvas.style.gridTemplateColumns = state.columnTemplate;
     dom.canvas.style.gap = `${Math.max(4, Math.min(state.gap, 24))}px`;
     dom.canvas.innerHTML = "";
     const preview = getDragRectangle();
@@ -288,6 +306,8 @@ if (typeof document !== "undefined") {
     }
     state.rows = rows;
     state.columns = columns;
+    state.rowTemplate = `repeat(${rows}, minmax(80px, 1fr))`;
+    state.columnTemplate = `repeat(${columns}, 1fr)`;
     state.cells = clearInvalidAreaFragments(next, state.activeArea);
   }
 
@@ -304,6 +324,18 @@ if (typeof document !== "undefined") {
       state.gap = Math.max(0, Math.min(64, Number(dom.gap.value) || 0));
       render();
     });
+    dom.columnTemplate.addEventListener("input", () => {
+      state.columnTemplate = normalizeTrackTemplate(dom.columnTemplate.value, state.columns, "1fr");
+      render();
+    });
+    dom.rowTemplate.addEventListener("input", () => {
+      state.rowTemplate = normalizeTrackTemplate(dom.rowTemplate.value, state.rows, "minmax(80px, 1fr)");
+      render();
+    });
+    dom.includeAreas.addEventListener("change", () => {
+      state.includeAreas = dom.includeAreas.checked;
+      render();
+    });
     dom.areaName.addEventListener("input", () => {
       state.activeArea = normalizeAreaName(dom.areaName.value);
     });
@@ -317,6 +349,9 @@ if (typeof document !== "undefined") {
       state.rows = 3;
       state.columns = 4;
       state.gap = 16;
+      state.columnTemplate = "repeat(4, 1fr)";
+      state.rowTemplate = "repeat(3, minmax(80px, 1fr))";
+      state.includeAreas = true;
       state.cells = cloneCells(initialCells);
       state.areas = {
         header: { color: "#3167d4" },
@@ -334,6 +369,9 @@ if (typeof document !== "undefined") {
       state.rows = 4;
       state.columns = 4;
       state.gap = 16;
+      state.columnTemplate = "240px 1fr 1fr 1fr";
+      state.rowTemplate = "64px minmax(160px, 1fr) minmax(160px, 1fr) 72px";
+      state.includeAreas = true;
       state.cells = [
         ["nav", "nav", "nav", "nav"],
         ["sidebar", "main", "main", "main"],
@@ -434,6 +472,8 @@ if (typeof document !== "undefined") {
     state.cells = parsed.cells;
     state.rows = parsed.cells.length;
     state.columns = parsed.cells[0].length;
+    state.rowTemplate = `repeat(${state.rows}, minmax(80px, 1fr))`;
+    state.columnTemplate = `repeat(${state.columns}, 1fr)`;
     getAreaNames(state.cells).forEach((name) => ensureAreaMeta(name));
     dom.areasError.textContent = "";
     dom.canvasMessage.textContent = "Template areas applied.";

@@ -25,6 +25,8 @@
         <label>Columns <input id="columns-input" type="number" min="1" max="8" value="4"></label>
         <label>Rows <input id="rows-input" type="number" min="1" max="8" value="3"></label>
         <label>Gap <input id="gap-input" type="number" min="0" max="64" value="16"></label>
+        <label>Column Widths <input id="column-template-input" type="text" value="repeat(4, 1fr)" spellcheck="false"></label>
+        <label>Row Heights <input id="row-template-input" type="text" value="repeat(3, minmax(80px, 1fr))" spellcheck="false"></label>
 
         <h2>Active Area</h2>
         <label>Name <input id="area-name-input" type="text" value="content" spellcheck="false" aria-describedby="area-name-help"></label>
@@ -45,13 +47,17 @@
       </section>
 
       <aside class="panel code-panel">
-        <label class="section-label" for="areas-textarea">grid-template-areas</label>
-        <textarea id="areas-textarea" spellcheck="false" rows="6"></textarea>
-        <div class="button-row">
-          <button id="apply-areas" class="button" type="button">Apply Areas</button>
-          <button id="copy-areas" class="button secondary" type="button">Copy Areas</button>
-        </div>
-        <p id="areas-error" class="error-message" role="alert"></p>
+        <details class="advanced-panel">
+          <summary>Advanced: grid-template-areas</summary>
+          <label class="checkbox-label"><input id="include-areas-input" type="checkbox" checked> Include grid-template-areas in CSS</label>
+          <label class="section-label" for="areas-textarea">grid-template-areas</label>
+          <textarea id="areas-textarea" spellcheck="false" rows="6"></textarea>
+          <div class="button-row">
+            <button id="apply-areas" class="button" type="button">Apply Areas</button>
+            <button id="copy-areas" class="button secondary" type="button">Copy Areas</button>
+          </div>
+          <p id="areas-error" class="error-message" role="alert"></p>
+        </details>
 
         <h2>Generated CSS</h2>
         <pre><code id="css-output"></code></pre>
