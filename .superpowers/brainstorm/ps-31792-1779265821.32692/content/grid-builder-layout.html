@@ -1,0 +1,72 @@
+<h2>CSS Grid Layout Builder - proposed workspace</h2>
+<p class="subtitle">Visual editing first, CSS Grid syntax always visible.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Builder screen</div>
+  <div class="mockup-body">
+    <div style="display:grid;grid-template-columns:220px minmax(320px,1fr) 280px;gap:12px;min-height:430px;">
+      <aside style="border:1px solid #d8dee8;border-radius:8px;padding:12px;background:#f8fafc;">
+        <div class="label">Grid Controls</div>
+        <div style="display:grid;gap:10px;margin-top:12px;">
+          <div class="mock-input">Columns: 4</div>
+          <div class="mock-input">Rows: 3</div>
+          <div class="mock-input">Gap: 16px</div>
+          <div class="mock-button">Add Area</div>
+          <div class="mock-button">Reset</div>
+        </div>
+        <div style="margin-top:18px;">
+          <div class="label">Areas</div>
+          <div style="display:grid;gap:8px;margin-top:8px;">
+            <div class="placeholder">header</div>
+            <div class="placeholder">sidebar</div>
+            <div class="placeholder">content</div>
+            <div class="placeholder">footer</div>
+          </div>
+        </div>
+      </aside>
+
+      <main style="border:1px solid #cfd7e3;border-radius:8px;padding:16px;background:white;">
+        <div class="label">Interactive Canvas</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,96px);gap:8px;margin-top:12px;">
+          <div style="grid-column:1/5;background:#3167d4;color:white;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;">header</div>
+          <div style="background:#f4a261;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;">sidebar</div>
+          <div style="grid-column:2/5;background:#2a9d8f;color:white;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;">content</div>
+          <div style="grid-column:1/5;background:#495057;color:white;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;">footer</div>
+        </div>
+      </main>
+
+      <aside style="border:1px solid #d8dee8;border-radius:8px;padding:12px;background:#fbfbfd;">
+        <div class="label">Generated CSS</div>
+        <pre style="white-space:pre-wrap;font-size:12px;line-height:1.45;background:#172033;color:#e8eefc;border-radius:6px;padding:12px;margin-top:12px;">.layout {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  grid-template-areas:
+    "header header header header"
+    "sidebar content content content"
+    "footer footer footer footer";
+  gap: 16px;
+}</pre>
+        <div class="mock-button">Copy CSS</div>
+        <div class="mock-button">Export HTML</div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approve" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Approve this direction</h3>
+      <p>Build the first version as a single-page static app with visual editing and generated CSS.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="revise" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Revise layout direction</h3>
+      <p>Adjust panel structure, feature emphasis, or visual density before implementation.</p>
+    </div>
+  </div>
+</div>

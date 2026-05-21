@@ -4,6 +4,11 @@ A dependency-free CSS Grid layout builder. Open `index.html` in a browser, drag 
 
 This project was created end-to-end by AI, from initial design through implementation.
 
+## Screenshot
+
+![main screen](docs/assets/main.png)
+
+
 ## Features
 
 - Drag-select rectangular CSS Grid areas
